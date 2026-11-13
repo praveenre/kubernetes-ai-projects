@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     image: devopscube/jenkins-runner:local
     container_name: local-jenkins-ci
+    user: "0:0"
     restart: unless-stopped
     ports:
       - "8080:8080"

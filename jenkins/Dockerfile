@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    git config --system --add safe.directory '*'
 
 # Install Docker CLI
 RUN install -m 0755 -d /etc/apt/keyrings && \

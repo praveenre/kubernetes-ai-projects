@@ -16,8 +16,6 @@ pipeline {
     environment {
         // Build image tag for this pipeline execution
         IMAGE_TAG = "${params.IMAGE_TAG_OVERRIDE ?: 'jenkins-' + env.BUILD_NUMBER}"
-        // Fallback mock key if MESH_API_KEY credential is not pre-configured in Jenkins
-        MESH_KEY = credentials('MESH_API_KEY') ?: 'mock-ci-key-for-healthcheck'
     }
 
     stages {
@@ -85,18 +83,26 @@ pipeline {
                 echo "================================================================="
                 echo "  Stage 4: Deploying Postgres Database & Secrets"
                 echo "================================================================="
+                script {
+                    def resolvedKey = 'mock-ci-key-for-healthcheck'
+                    try {
+                        withCredentials([string(credentialsId: 'MESH_API_KEY', variable: 'SECRET_MESH_KEY')]) {
+                            if (env.SECRET_MESH_KEY) {
+                                resolvedKey = env.SECRET_MESH_KEY
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "Notice: MESH_API_KEY credential not configured in Jenkins. Using mock key for CI delivery."
+                    }
+                    env.RESOLVED_MESH_KEY = resolvedKey
+                }
                 sh '''
                     kubectl apply -f ai-agent/k8s/manifests/namespace.yaml
                     kubectl apply -f ai-agent/k8s/manifests/configmap.yaml
 
-                    API_KEY="${MESH_KEY}"
-                    if [ -z "$API_KEY" ] || [ "$API_KEY" = "null" ]; then
-                        API_KEY="mock-ci-key-for-healthcheck"
-                    fi
-
                     kubectl create secret generic ai-agent-secrets -n ai-agent \
                       --from-literal=DATABASE_PASSWORD=changeme \
-                      --from-literal=MESH_API_KEY="$API_KEY" \
+                      --from-literal=MESH_API_KEY="$RESOLVED_MESH_KEY" \
                       --dry-run=client -o yaml | kubectl apply -f -
 
                     kubectl create secret generic ai-agent-postgres-secrets -n ai-agent \
@@ -144,7 +150,15 @@ pipeline {
                     TEST_PORT=8088
                     kubectl port-forward svc/ai-agent-backend ${TEST_PORT}:8000 -n ai-agent &
                     PF_PID=$!
-                    sleep 5
+
+                    echo "Waiting for port-forward tunnel on port ${TEST_PORT}..."
+                    for i in $(seq 1 15); do
+                        if curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz > /dev/null 2>&1; then
+                            echo "Port-forward listener is ready!"
+                            break
+                        fi
+                        sleep 1
+                    done
 
                     echo "Testing /healthz endpoint on port ${TEST_PORT}..."
                     curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz

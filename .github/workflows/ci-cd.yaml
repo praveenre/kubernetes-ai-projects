@@ -121,16 +121,26 @@ jobs:
           # Check pods status
           kubectl get pods -n ai-agent -o wide
 
-          # Port-forward to verify backend endpoints directly
-          kubectl port-forward svc/ai-agent-backend 8000:8000 -n ai-agent &
+          # Port-forward to verify backend endpoints directly on an ephemeral port to avoid conflict with k3d host port 8000
+          TEST_PORT=8088
+          kubectl port-forward svc/ai-agent-backend ${TEST_PORT}:8000 -n ai-agent &
           PF_PID=$!
-          sleep 5
+
+          # Poll for port-forward tunnel readiness
+          echo "Waiting for port-forward tunnel on port ${TEST_PORT}..."
+          for i in $(seq 1 15); do
+            if curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz > /dev/null 2>&1; then
+              echo "Port-forward listener is ready!"
+              break
+            fi
+            sleep 1
+          done
 
           echo "Testing /healthz endpoint..."
-          curl -fail -s http://127.0.0.1:8000/healthz
+          curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz
 
           echo "Testing /metrics endpoint..."
-          curl -fail -s -L http://127.0.0.1:8000/metrics | grep "python_info"
+          curl -fail -s -L http://127.0.0.1:${TEST_PORT}/metrics | grep "python_info"
 
           kill $PF_PID || true
           echo "=== CI/CD Pipeline Completed Successfully! ==="

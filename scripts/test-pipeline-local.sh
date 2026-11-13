@@ -94,7 +94,15 @@ kubectl get all -n ai-agent
 TEST_PORT=8088
 kubectl port-forward svc/ai-agent-backend ${TEST_PORT}:8000 -n ai-agent &
 PF_PID=$!
-sleep 5
+
+echo "  Waiting for port-forward tunnel on port ${TEST_PORT}..."
+for i in $(seq 1 15); do
+    if curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz > /dev/null 2>&1; then
+        echo "  Port-forward listener is ready!"
+        break
+    fi
+    sleep 1
+done
 
 echo "  Testing /healthz endpoint on port ${TEST_PORT}..."
 curl -fail -s http://127.0.0.1:${TEST_PORT}/healthz
