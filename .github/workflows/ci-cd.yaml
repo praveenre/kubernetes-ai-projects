@@ -1,0 +1,132 @@
+name: CI/CD - k3d Infrastructure & Service Delivery
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Lint & Manifest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate Python Syntax
+        run: |
+          python -m py_compile ai-agent/agent-backend/app/main.py
+          python -m py_compile ai-agent/agent-backend/app/infra/llm.py
+          python -m py_compile ai-agent/agent-backend/app/agent/graph.py
+          python -m py_compile ai-agent/agent-backend/app/agent/nodes.py
+
+      - name: Validate Kubernetes Manifests with Kustomize
+        run: |
+          kubectl kustomize ai-agent/k8s/ > /dev/null
+          echo "Kustomize manifests validated successfully."
+
+  k3d-infra-and-delivery:
+    name: Provision k3d Cluster & Deliver Services
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install k3d CLI
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d version
+
+      - name: 1. Infra Provisioning - Create k3d Kubernetes Cluster
+        run: |
+          echo "=== Provisioning k3d Cluster ==="
+          chmod +x scripts/setup-k3d.sh
+          ./scripts/setup-k3d.sh ai-agent-ci-cluster
+
+          kubectl cluster-info
+          kubectl get nodes -o wide
+          kubectl get storageclass
+
+      - name: 2. Build & Import Container Images into k3d
+        run: |
+          echo "=== Building Backend Image ==="
+          docker build -t devopscube/ai-agent-backend:ci ai-agent/agent-backend
+
+          echo "=== Building Frontend Image ==="
+          docker build -t devopscube/ai-agent-frontend:ci ai-agent/agent-interface
+
+          echo "=== Importing Images into k3d Cluster ==="
+          k3d image import devopscube/ai-agent-backend:ci devopscube/ai-agent-frontend:ci -c ai-agent-ci-cluster
+
+      - name: 3. Deliver Database Infrastructure (Postgres)
+        run: |
+          echo "=== Deploying Postgres StatefulSet & PVC ==="
+          kubectl apply -f ai-agent/k8s/manifests/namespace.yaml
+          kubectl apply -f ai-agent/k8s/manifests/configmap.yaml
+
+          # Inject secrets (uses MESH_API_KEY from GitHub Secrets if available, otherwise mock key for CI)
+          MESH_KEY="${{ secrets.MESH_API_KEY }}"
+          if [ -z "$MESH_KEY" ]; then
+            MESH_KEY="mock-ci-key-for-healthcheck"
+          fi
+
+          kubectl create secret generic ai-agent-secrets -n ai-agent \
+            --from-literal=DATABASE_PASSWORD=changeme \
+            --from-literal=MESH_API_KEY="$MESH_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic ai-agent-postgres-secrets -n ai-agent \
+            --from-literal=POSTGRES_PASSWORD=changeme \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl apply -f ai-agent/k8s/manifests/postgres.yaml
+
+          echo "Waiting for Postgres StatefulSet to become Ready..."
+          kubectl rollout status statefulset/ai-agent-postgres -n ai-agent --timeout=120s
+          kubectl get pods,pvc -n ai-agent
+
+      - name: 4. Deliver Application Services (Backend & Frontend)
+        run: |
+          echo "=== Deploying AI Agent Services via Kustomize ==="
+          cd ai-agent/k8s
+          # Patch images to use the CI tag imported into k3d
+          sed -i 's/newTag: v1.7.1/newTag: ci/g' kustomization.yaml
+          sed -i 's/newTag: v1.8.2/newTag: ci/g' kustomization.yaml
+          kubectl apply -k .
+          cd ../..
+
+          echo "Waiting for Backend Deployment..."
+          kubectl rollout status deployment/ai-agent-backend -n ai-agent --timeout=180s
+
+          echo "Waiting for Frontend Deployment..."
+          kubectl rollout status deployment/ai-agent-frontend -n ai-agent --timeout=180s
+
+          kubectl get all -n ai-agent
+
+      - name: 5. Verify Cluster Delivery & Smoke Tests
+        run: |
+          echo "=== Verifying Running Services ==="
+          # Check pods status
+          kubectl get pods -n ai-agent -o wide
+
+          # Port-forward to verify backend endpoints directly
+          kubectl port-forward svc/ai-agent-backend 8000:8000 -n ai-agent &
+          PF_PID=$!
+          sleep 5
+
+          echo "Testing /healthz endpoint..."
+          curl -fail -s http://127.0.0.1:8000/healthz
+
+          echo "Testing /metrics endpoint..."
+          curl -fail -s http://127.0.0.1:8000/metrics | grep "python_info"
+
+          kill $PF_PID || true
+          echo "=== CI/CD Pipeline Completed Successfully! ==="

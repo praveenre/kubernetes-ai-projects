@@ -34,9 +34,8 @@ in `agent-backend/.env`.
 
 ## Deploying to Kubernetes
 
-See [`k8s/README.md`](k8s/README.md) for prerequisites, Dockerfiles, manifests (Deployment,
-Service, RBAC, NetworkPolicy, Postgres-backed durable memory, health probes), and a phased
-step-by-step deploy guide.
+- **Bare-metal k3d Setup**: See [`docs/baremetal-k3d-setup.md`](../docs/baremetal-k3d-setup.md) for 1-command cluster provisioning from scratch on bare-metal Linux/Windows and CI/CD pipeline automation.
+- **Manifests & RBAC**: See [`k8s/README.md`](k8s/README.md) for manifests (Deployment, Service, RBAC, NetworkPolicy, Postgres-backed durable memory, health probes), and a phased step-by-step deploy guide.
 
 ## API endpoints
 

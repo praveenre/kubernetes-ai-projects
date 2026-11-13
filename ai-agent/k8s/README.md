@@ -4,6 +4,25 @@ Backend (LangGraph + FastAPI), frontend (Next.js chat UI), and Postgres for dura
 
 ---
 
+## Bare-metal k3d Cluster Provisioning
+
+To provision a local k3d Kubernetes cluster from scratch on a bare-metal machine:
+
+```sh
+# On Linux / macOS / WSL:
+chmod +x ../scripts/setup-k3d.sh
+../scripts/setup-k3d.sh
+
+# On Windows PowerShell:
+..\scripts\setup-k3d.ps1
+```
+
+This uses `k3d-config.yaml` to create an ephemeral multi-node cluster with ports `8000` (backend), `3000` (frontend), `5432` (postgres), and `80` (ingress) pre-forwarded.
+
+For CI/CD automation via GitHub Actions, see [`.github/workflows/ci-cd.yaml`](../../.github/workflows/ci-cd.yaml) and [`docs/baremetal-k3d-setup.md`](../../docs/baremetal-k3d-setup.md).
+
+---
+
 ## Prerequisites
 
 - `kubectl` pointed at your cluster (e.g. `k3d`, `minikube`, or any Kubernetes cluster), with cluster-admin rights
