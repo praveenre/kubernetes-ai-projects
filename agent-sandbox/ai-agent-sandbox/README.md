@@ -9,8 +9,9 @@ The backend is provisioned via `SandboxTemplate` -> `SandboxWarmPool` -> `Sandbo
 a bare `Sandbox` object directly - `SandboxClaim` allocates an instance from a pre-warmed pool.
 `replicas: 1` on the pool means exactly one instance is claimed.
 
-The gVisor `RuntimeClass` object itself is **not** created here - it's assumed to already exist on
-the cluster (handler `runsc`, from the nodegroup bootstrap / prerequisites setup).
+The gVisor `RuntimeClass` object is declaratively included in `manifests/00-runtimeclass.yaml`
+(handler `runsc`). For node bootstrap scripts and guides across AWS EKS and k3d, see [`../../gvisor/README.md`](../../gvisor/README.md)
+or run [`../../scripts/setup-gvisor.sh`](../../scripts/setup-gvisor.sh).
 
 ## What's sandboxed, and what isn't
 
@@ -80,6 +81,7 @@ kubectl -n ai-agent delete sandboxclaim ai-agent-backend-claim && kubectl apply 
 | File | Purpose |
 |---|---|
 | `kustomization.yaml` | Image tags, ConfigMap/Secret generation - same pattern as `ai-agent/k8s/kustomization.yaml`, plus `disableNameSuffixHash: true` on the backend's ConfigMap/Secret (see below) |
+| `manifests/00-runtimeclass.yaml` | `RuntimeClass` for gVisor (`handler: runsc`) to enable sandbox isolation |
 | `manifests/00-namespace.yaml` .. `02-rbac.yaml` | Same as `ai-agent/k8s/manifests` |
 | `manifests/03-configmap.yaml` | Static wiring config (DB host/port/name/user, `BACKEND_URL`, CORS) - same split as `ai-agent/k8s/manifests/configmap.yaml`, merged with per-deployment knobs from `kustomization.yaml`'s `configMapGenerator` |
 | `manifests/04-postgres.yaml` | Same as `ai-agent/k8s/manifests/postgres.yaml` |

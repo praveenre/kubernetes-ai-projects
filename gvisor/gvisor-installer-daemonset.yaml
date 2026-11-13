@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: gvisor-installer
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: gvisor-installer
+spec:
+  selector:
+    matchLabels:
+      name: gvisor-installer
+  template:
+    metadata:
+      labels:
+        name: gvisor-installer
+    spec:
+      hostNetwork: true
+      hostPID: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      initContainers:
+        - name: install-gvisor
+          image: alpine:latest
+          securityContext:
+            privileged: true
+          command:
+            - sh
+            - -c
+            - |
+              set -ex
+              ARCH=$(uname -m)
+              echo "Installing gVisor binaries for architecture: ${ARCH}..."
+
+              apk add --no-cache curl tar zstd
+
+              URL="https://storage.googleapis.com/gvisor/releases/release/latest/${ARCH}"
+              curl -fsSL "${URL}/gvisor.tar.zstd" -o /tmp/gvisor.tar.zstd
+              tar --zstd -xf /tmp/gvisor.tar.zstd -C /host/bin/
+              chmod +x /host/bin/runsc /host/bin/containerd-shim-runsc-v1 /host/bin/gvisor-bin/*
+              rm -f /tmp/gvisor.tar.zstd
+
+              echo "Configuring containerd runtime..."
+              mkdir -p /host/etc/containerd/config-v3.toml.d
+
+              cat << 'EOF' > /host/etc/containerd/config-v3.toml.d/runsc.toml
+              [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc]
+                runtime_type = "io.containerd.runsc.v1"
+              EOF
+
+              # Fallback for containerd v1 / grpc plugin style config
+              CONTAINERD_CONFIG="/host/etc/containerd/config.toml"
+              if [ -f "$CONTAINERD_CONFIG" ] && ! grep -q "containerd.runtimes.runsc" "$CONTAINERD_CONFIG"; then
+                cat << 'EOF' >> "$CONTAINERD_CONFIG"
+
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
+                runtime_type = "io.containerd.runsc.v1"
+              EOF
+              fi
+
+              echo "Restarting containerd on host..."
+              nsenter -t 1 -m -u -n -i systemctl restart containerd || pkill -HUP containerd || true
+              echo "gVisor successfully installed!"
+          volumeMounts:
+            - name: host-bin
+              mountPath: /host/bin
+            - name: host-etc-containerd
+              mountPath: /host/etc/containerd
+            - name: host-root
+              mountPath: /host
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+      volumes:
+        - name: host-bin
+          hostPath:
+            path: /usr/local/bin
+        - name: host-etc-containerd
+          hostPath:
+            path: /etc/containerd
+        - name: host-root
+          hostPath:
+            path: /
+  updateStrategy:
+    type: RollingUpdate

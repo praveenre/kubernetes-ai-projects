@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gvisor-smoke-test
+  namespace: default
+  labels:
+    app: gvisor-smoke-test
+spec:
+  runtimeClassName: gvisor
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: alpine:latest
+      command: ["sh", "-c", "echo '=== Kernel dmesg output under gVisor ===' && dmesg && echo '=== gVisor verification complete ==='"]

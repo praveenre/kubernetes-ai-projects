@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: ai-agent
 
 resources:
+  - manifests/00-runtimeclass.yaml
   - manifests/00-namespace.yaml
   - manifests/01-serviceaccount.yaml
   - manifests/02-rbac.yaml
