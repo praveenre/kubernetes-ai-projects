@@ -85,3 +85,4 @@ spec:
             path: /
   updateStrategy:
     type: RollingUpdate
+

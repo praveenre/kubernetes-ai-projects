@@ -20,6 +20,7 @@ spec:
       containers:
         - name: frontend
           image: docker.io/devopscube/ai-agent-frontend:v1.8.2
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:

@@ -51,6 +51,13 @@ key `allowed-label-domains`). `sandbox.users.io` is the controller's own default
 that is what `manifests/07-backend-claim.yaml` and `manifests/11-networkpolicy.yaml` use, rather
 than adding a custom domain to the cluster-wide allowlist.
 
+**A fourth gotcha - controller-generated NetworkPolicy:** by default, `SandboxTemplate` uses
+`networkPolicyManagement: Managed`, which automatically creates a restrictive template NetworkPolicy
+blocking all RFC 1918 private ranges (10.0.0.0/8, 172.16.0.0/12, etc.). This blocks cluster DNS
+and internal services (like Postgres) for standby pods. Setting `networkPolicyManagement: Unmanaged`
+disables the auto-generated policy so that our declarative `manifests/11-networkpolicy.yaml`
+cleanly manages traffic for both claimed and standby warm-pool instances.
+
 ## Prerequisites
 
 - `kubectl` context pointed at your target cluster

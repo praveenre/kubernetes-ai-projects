@@ -5,6 +5,7 @@ metadata:
   namespace: ai-agent
 spec:
   service: false
+  networkPolicyManagement: Unmanaged
   podTemplate:
     spec:
       runtimeClassName: gvisor
@@ -20,6 +21,7 @@ spec:
       containers:
         - name: backend
           image: docker.io/devopscube/ai-agent-backend:v1.7.1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:

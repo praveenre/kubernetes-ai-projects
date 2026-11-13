@@ -30,6 +30,31 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: ai-agent-backend-warmpool
+  namespace: ai-agent
+spec:
+  podSelector:
+    matchExpressions:
+      - key: agents.x-k8s.io/warm-pool-sandbox
+        operator: Exists
+  policyTypes: ["Egress"]
+  egress:
+    - ports:
+        - {port: 443, protocol: TCP}
+        - {port: 6443, protocol: TCP}
+        - {port: 8443, protocol: TCP}
+    - to:
+        - podSelector: {matchLabels: {app: ai-agent-postgres}}
+      ports: [{port: 5432, protocol: TCP}]
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: ai-agent-frontend
   namespace: ai-agent
 spec:
@@ -59,5 +84,5 @@ spec:
   policyTypes: ["Ingress"]
   ingress:
     - from:
-        - podSelector: {matchLabels: {sandbox.users.io/role: backend}}
+        - podSelector: {}
       ports: [{port: 5432, protocol: TCP}]

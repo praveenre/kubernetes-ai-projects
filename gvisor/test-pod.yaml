@@ -12,3 +12,4 @@ spec:
     - name: test
       image: alpine:latest
       command: ["sh", "-c", "echo '=== Kernel dmesg output under gVisor ===' && dmesg && echo '=== gVisor verification complete ==='"]
+

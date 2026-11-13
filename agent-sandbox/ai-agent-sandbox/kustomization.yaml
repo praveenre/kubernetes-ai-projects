@@ -47,9 +47,9 @@ secretGenerator:
     options:
       disableNameSuffixHash: true
     literals:
-      - DATABASE_PASSWORD=x79BQgd2HJ16qYe0c0MaT106
+      - DATABASE_PASSWORD=changeme
       - MESH_API_KEY=your-mesh-api-key
   - name: ai-agent-postgres-secrets
     namespace: ai-agent
     literals:
-      - POSTGRES_PASSWORD=x79BQgd2HJ16qYe0c0MaT106
+      - POSTGRES_PASSWORD=changeme
