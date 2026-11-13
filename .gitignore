@@ -23,4 +23,5 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+.k3d-active-cluster
 

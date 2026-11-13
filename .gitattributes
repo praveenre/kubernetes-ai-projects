@@ -1,0 +1,7 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Explicitly declare shell scripts to always use LF
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+Jenkinsfile text eol=lf

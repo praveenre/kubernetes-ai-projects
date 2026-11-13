@@ -1,0 +1,36 @@
+jenkins:
+  systemMessage: "Local Jenkins CI/CD for Kubernetes AI Agent"
+  mode: NORMAL
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "admin"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: true
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+jobs:
+  - script: >
+      pipelineJob('kubernetes-ai-agent-ci-cd') {
+        description('CI/CD Pipeline for Kubernetes AI Agent, k3d, and Postgres')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('file:///workspace')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+      }

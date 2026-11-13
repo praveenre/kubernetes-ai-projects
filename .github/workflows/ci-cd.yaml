@@ -64,7 +64,8 @@ jobs:
           docker build -t devopscube/ai-agent-frontend:ci ai-agent/agent-interface
 
           echo "=== Importing Images into k3d Cluster ==="
-          k3d image import devopscube/ai-agent-backend:ci devopscube/ai-agent-frontend:ci -c ai-agent-ci-cluster
+          ACTIVE_CLUSTER=$(cat .k3d-active-cluster 2>/dev/null || echo "ai-agent-ci-cluster")
+          k3d image import devopscube/ai-agent-backend:ci devopscube/ai-agent-frontend:ci -c "${ACTIVE_CLUSTER}"
 
       - name: 3. Deliver Database Infrastructure (Postgres)
         run: |
@@ -126,7 +127,8 @@ jobs:
           curl -fail -s http://127.0.0.1:8000/healthz
 
           echo "Testing /metrics endpoint..."
-          curl -fail -s http://127.0.0.1:8000/metrics | grep "python_info"
+          curl -fail -s -L http://127.0.0.1:8000/metrics | grep "python_info"
 
           kill $PF_PID || true
           echo "=== CI/CD Pipeline Completed Successfully! ==="
+

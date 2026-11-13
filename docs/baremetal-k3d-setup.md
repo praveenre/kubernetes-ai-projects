@@ -129,3 +129,14 @@ The automated pipeline is defined in [.github/workflows/ci-cd.yaml](../.github/w
 ### Required GitHub Secrets:
 To allow the CI pipeline to run live LLM diagnosis during smoke tests, add:
 - `MESH_API_KEY`: Your Mesh API gateway key (Settings → Secrets and variables → Actions).
+
+---
+
+## 4. Alternative CI/CD: Jenkins Pipeline & Local Testing
+
+In addition to GitHub Actions, the repository includes a full **[Jenkinsfile](../Jenkinsfile)** and local test harness:
+- **Intelligent Cluster Reuse**: If a k3d cluster is already running locally (e.g. `harness-lab`), both setup scripts and the pipeline detect it and skip fresh installation.
+- **Local Testing**: Run `.\scripts\test-pipeline-local.ps1` (Windows) or `./scripts/test-pipeline-local.sh` (Linux/WSL) to validate all 6 stages locally.
+- **Local Jenkins Runner**: Launch a containerized Jenkins instance with `docker compose -f jenkins/docker-compose.yaml up -d --build`.
+- See the complete [Jenkins Setup Guide](./jenkins-setup.md) for full instructions.
+

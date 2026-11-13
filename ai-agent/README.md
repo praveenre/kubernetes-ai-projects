@@ -35,6 +35,7 @@ in `agent-backend/.env`.
 ## Deploying to Kubernetes
 
 - **Bare-metal k3d Setup**: See [`docs/baremetal-k3d-setup.md`](../docs/baremetal-k3d-setup.md) for 1-command cluster provisioning from scratch on bare-metal Linux/Windows and CI/CD pipeline automation.
+- **CI/CD Pipelines (GHA & Jenkins)**: See [`.github/workflows/ci-cd.yaml`](../.github/workflows/ci-cd.yaml) for GitHub Actions and [`docs/jenkins-setup.md`](../docs/jenkins-setup.md) for Jenkins setup and local testing.
 - **Manifests & RBAC**: See [`k8s/README.md`](k8s/README.md) for manifests (Deployment, Service, RBAC, NetworkPolicy, Postgres-backed durable memory, health probes), and a phased step-by-step deploy guide.
 
 ## API endpoints
