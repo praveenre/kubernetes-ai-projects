@@ -30,14 +30,15 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     literals:
-      - AWS_REGION=us-west-2
-      - DIAGNOSTICS_MODEL_ID=us.amazon.nova-pro-v1:0
-      - REMEDIATION_MODEL_ID=us.amazon.nova-pro-v1:0
+      - LLM_PROVIDER=meshapi
+      - MESH_BASE_URL=https://api.meshapi.ai/v1
+      - DIAGNOSTICS_MODEL_ID=openai/gpt-4o-mini
+      - REMEDIATION_MODEL_ID=openai/gpt-4o-mini
       - REQUIRE_APPROVAL=true
-      - DIAGNOSTICS_MODEL_PRICE_INPUT_PER_1K=0.0008
-      - DIAGNOSTICS_MODEL_PRICE_OUTPUT_PER_1K=0.0032
-      - REMEDIATION_MODEL_PRICE_INPUT_PER_1K=0.0008
-      - REMEDIATION_MODEL_PRICE_OUTPUT_PER_1K=0.0032
+      - DIAGNOSTICS_MODEL_PRICE_INPUT_PER_1K=0.00015
+      - DIAGNOSTICS_MODEL_PRICE_OUTPUT_PER_1K=0.00060
+      - REMEDIATION_MODEL_PRICE_INPUT_PER_1K=0.00015
+      - REMEDIATION_MODEL_PRICE_OUTPUT_PER_1K=0.00060
 
 secretGenerator:
   - name: ai-agent-secrets
@@ -46,6 +47,7 @@ secretGenerator:
       disableNameSuffixHash: true
     literals:
       - DATABASE_PASSWORD=x79BQgd2HJ16qYe0c0MaT106
+      - MESH_API_KEY=your-mesh-api-key
   - name: ai-agent-postgres-secrets
     namespace: ai-agent
     literals:

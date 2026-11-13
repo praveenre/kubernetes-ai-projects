@@ -4,6 +4,10 @@ metadata:
   name: ai-agent-config
   namespace: ai-agent
 data:
+  LLM_PROVIDER: "meshapi"
+  MESH_BASE_URL: "https://api.meshapi.ai/v1"
+  DIAGNOSTICS_MODEL_ID: "openai/gpt-4o-mini"
+  REMEDIATION_MODEL_ID: "openai/gpt-4o-mini"
   ALLOWED_ORIGINS: "http://(localhost|127\\.0\\.0\\.1):\\d+|http://ai-agent-frontend(\\.ai-agent)?(\\.svc)?(\\.cluster\\.local)?:\\d+"
   DATABASE_HOST: "ai-agent-postgres"
   DATABASE_PORT: "5432"

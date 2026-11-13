@@ -10,14 +10,20 @@ spec:
   ingress:
     - from:
         - podSelector: {matchLabels: {app: ai-agent-frontend}}
+        - namespaceSelector: {}
       ports:
         - {port: 8000, protocol: TCP}
   egress:
-    - ports: [{port: 443, protocol: TCP}]
+    - ports:
+        - {port: 443, protocol: TCP}
+        - {port: 6443, protocol: TCP}
+        - {port: 8443, protocol: TCP}
     - to:
         - podSelector: {matchLabels: {app: ai-agent-postgres}}
       ports: [{port: 5432, protocol: TCP}]
-    - ports:
+    - to:
+        - namespaceSelector: {}
+      ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
 ---
@@ -36,7 +42,9 @@ spec:
     - to:
         - podSelector: {matchLabels: {sandbox.users.io/role: backend}}
       ports: [{port: 8000, protocol: TCP}]
-    - ports:
+    - to:
+        - namespaceSelector: {}
+      ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
 ---

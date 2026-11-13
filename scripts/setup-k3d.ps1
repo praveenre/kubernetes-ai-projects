@@ -1,4 +1,4 @@
-﻿# PowerShell script to provision a local k3d cluster on Windows bare-metal
+# PowerShell script to provision a local k3d cluster on Windows bare-metal
 param(
     [string]$ClusterName = ""
 )

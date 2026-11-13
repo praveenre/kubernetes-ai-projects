@@ -2,6 +2,9 @@
 
 This project supports **both** GitHub Actions (`.github/workflows/ci-cd.yaml`) and Jenkins (`Jenkinsfile`), allowing both CI/CD engines to co-exist cleanly.
 
+> [!NOTE]
+> Both pipelines are configured for **Manual Execution Only** (`workflow_dispatch` in GitHub Actions, and parameter dispatch / "Build Now" in Jenkins). Automatic triggers on push and pull request are disabled so commits will not trigger unexpected CI runs.
+
 ---
 
 ## 1. Pipeline Architecture
@@ -82,3 +85,4 @@ docker compose -f jenkins/docker-compose.yaml up -d --build
 In Jenkins (`Manage Jenkins -> Credentials`), you can optionally add:
 - **ID**: `MESH_API_KEY` (Secret text): Your LLM API key for live inference tests during build.
   *(If omitted, the pipeline automatically falls back to mock credentials for health checking).*
+

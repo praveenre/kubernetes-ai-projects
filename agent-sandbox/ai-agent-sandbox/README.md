@@ -1,6 +1,6 @@
 # KubeCheck on Agent Sandbox (gVisor)
 
-Deploys the KubeCheck agent (from `../ai-agent`) onto the `gvisor-demo` EKS cluster, with the
+Deploys the KubeCheck agent (from `../ai-agent`) onto any Kubernetes cluster with gVisor support, with the
 backend running inside an [agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox)
 `Sandbox` on the `gvisor` RuntimeClass - the part that executes model-directed cluster actions is
 the part worth syscall-isolating. Deployed with Kustomize, same pattern as `ai-agent/k8s`.
@@ -52,23 +52,19 @@ than adding a custom domain to the cluster-wide allowlist.
 
 ## Prerequisites
 
-- `kubectl` pointed at `gvisor-demo` (`aws eks update-kubeconfig --region us-west-2 --name gvisor-demo`)
-- agent-sandbox CRDs + controller already installed on the cluster (your own prerequisites setup -
-  not part of this folder)
+- `kubectl` context pointed at your target cluster
+- agent-sandbox CRDs + controller already installed on the cluster
 - The `gvisor` RuntimeClass (handler `runsc`) already registered, and nodes with gVisor installed
-  and labelled `sandbox: gvisor` - both handled by the cluster's own prerequisites setup, not by
-  this folder
-- A default StorageClass, for Postgres's PVC (`kubectl get storageclass` - mark one default if none is)
+  and labelled `sandbox: gvisor`
+- A default StorageClass, for Postgres's PVC (`kubectl get storageclass`)
 
 ## Deploy
 
-Set `DATABASE_PASSWORD` and `POSTGRES_PASSWORD` in the `secretGenerator` block of
-`kustomization.yaml` - they must match. Then:
+Set `DATABASE_PASSWORD` and `MESH_API_KEY` in the `secretGenerator` block of
+`kustomization.yaml`. Then:
 
 ```sh
-./scripts/setup-pod-identity.sh create   # first time only - maps the ai-agent ServiceAccount to Bedrock access
 kubectl apply -k .
-kubectl -n ai-agent delete sandboxclaim ai-agent-backend-claim && kubectl apply -k .   # picks up the credentials
 ```
 
 **Neither a `Sandbox` nor a claimed instance auto-rolls on spec changes** the way a
@@ -94,7 +90,6 @@ kubectl -n ai-agent delete sandboxclaim ai-agent-backend-claim && kubectl apply 
 | `manifests/09-frontend-deployment.yaml` | Frontend Deployment, unchanged from `ai-agent/k8s/manifests/frontend-deployment.yaml` |
 | `manifests/10-frontend-service.yaml` | Frontend Service, unchanged from `ai-agent/k8s/manifests/frontend-service.yaml` |
 | `manifests/11-networkpolicy.yaml` | Same rules as `ai-agent/k8s/manifests/networkpolicy.yaml`, except the backend-selecting rules use `sandbox.users.io/role: backend` instead of `app: ai-agent-backend`, to match the claimed pod's actual label |
-| `scripts/setup-pod-identity.sh` | Same script as `ai-agent/k8s/scripts`, pointed at `gvisor-demo`. Reuses the same IAM role name (`ai-agent-bedrock`) as the other cluster - IAM roles are account-global, Pod Identity *associations* are per-cluster |
 
 Kustomize's built-in `images:` transformer does reach into the `SandboxTemplate`'s nested
 `podTemplate.spec.containers[].image` field correctly - verified directly before relying on it.
@@ -113,5 +108,4 @@ Same public images as the rest of the project - no rebuild needed:
 ```sh
 kubectl delete -k .
 kubectl -n ai-agent delete pvc --all
-./scripts/setup-pod-identity.sh cleanup
 ```

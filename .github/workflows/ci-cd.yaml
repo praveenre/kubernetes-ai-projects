@@ -1,11 +1,13 @@
 name: CI/CD - k3d Infrastructure & Service Delivery
 
+# Manual dispatch runs only (disabled automatic execution on push and PR)
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: 'k3d cluster name to create/target'
+        required: false
+        default: 'ai-agent-ci-cluster'
 
 jobs:
   validate:
@@ -49,7 +51,8 @@ jobs:
         run: |
           echo "=== Provisioning k3d Cluster ==="
           chmod +x scripts/setup-k3d.sh
-          ./scripts/setup-k3d.sh ai-agent-ci-cluster
+          TARGET_CLUSTER="${{ inputs.cluster_name || 'ai-agent-ci-cluster' }}"
+          ./scripts/setup-k3d.sh "${TARGET_CLUSTER}"
 
           kubectl cluster-info
           kubectl get nodes -o wide

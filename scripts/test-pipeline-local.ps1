@@ -1,4 +1,4 @@
-﻿# Local Pipeline Test Runner (Simulating Jenkins / CI Stages locally on Windows)
+# Local Pipeline Test Runner (Simulating Jenkins / CI Stages locally on Windows)
 param(
     [string]$ImageTag = "local-test-$(Get-Random -Minimum 1000 -Maximum 9999)"
 )

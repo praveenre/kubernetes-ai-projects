@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    // Manual dispatch runs only (no SCM polling or webhook triggers)
+    parameters {
+        string(name: 'CLUSTER_NAME', defaultValue: 'ai-agent-cluster', description: 'Target k3d cluster name (auto-detects if already running)')
+        string(name: 'IMAGE_TAG_OVERRIDE', defaultValue: '', description: 'Custom image tag (leave blank to auto-generate from build number)')
+    }
+
     options {
         timeout(time: 30, unit: 'MINUTES')
         ansiColor('xterm')
@@ -9,7 +15,7 @@ pipeline {
 
     environment {
         // Build image tag for this pipeline execution
-        IMAGE_TAG = "jenkins-${BUILD_NUMBER}"
+        IMAGE_TAG = "${params.IMAGE_TAG_OVERRIDE ?: 'jenkins-' + env.BUILD_NUMBER}"
         // Fallback mock key if MESH_API_KEY credential is not pre-configured in Jenkins
         MESH_KEY = credentials('MESH_API_KEY') ?: 'mock-ci-key-for-healthcheck'
     }
@@ -43,7 +49,7 @@ pipeline {
                     chmod +x scripts/setup-k3d.sh
                     # setup-k3d.sh detects if a k3d cluster is already running locally.
                     # If running, it reuses it and skips fresh install.
-                    ./scripts/setup-k3d.sh
+                    ./scripts/setup-k3d.sh "${params.CLUSTER_NAME}"
 
                     kubectl cluster-info
                     kubectl get nodes -o wide
