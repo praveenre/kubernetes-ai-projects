@@ -1,0 +1,25 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Node
+node_modules/
+.next/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+
+# OS & Logs
+*.log
+.DS_Store
+Thumbs.db

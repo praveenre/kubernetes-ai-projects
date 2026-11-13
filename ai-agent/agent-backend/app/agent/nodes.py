@@ -3,10 +3,10 @@ import logging
 import re
 from typing import Any, Dict, List
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END
 
-from ..infra.bedrock import get_diagnostics_model, get_remediation_model
+from ..infra.llm import get_diagnostics_model, get_remediation_model
 from ..infra.metrics import GRAPH_NODE_SECONDS, REMEDIATION_OUTCOMES, record_tool_call
 from ..infra.usage_tracker import record_usage
 from ..tools import diag_tool_map, diag_tools, remedy_tool_map, remedy_tools
@@ -90,20 +90,20 @@ def diagnose_node(state: AgentState) -> Dict[str, Any]:
                     logger.info(f"tool_call diagnostics {tc['name']} args={tc['args']}")
                     result = invoke_tool_safely(tool_func, tc["args"])
                     record_tool_call(tc["name"], result)
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=str(result),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
                 else:
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=(
                             f"Error: Tool '{tc['name']}' does not exist - it was never provided to you. "
                             f"Your real available tools are: {sorted(diag_tool_map.keys())}. "
                             f"Retry using one of those instead of giving up."
                         ),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
         else:
             break
@@ -204,20 +204,20 @@ def generate_proposal(diagnostic_report: str, user_request: str, retry_context: 
                     logger.info(f"tool_call propose {tc['name']} args={tc['args']}")
                     result = invoke_tool_safely(tool_func, tc["args"])
                     record_tool_call(tc["name"], result)
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=str(result),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
                 else:
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=(
                             f"Error: Tool '{tc['name']}' does not exist - it was never provided to you. "
                             f"Your real available tools are: {sorted(diag_tool_map.keys())}. "
                             f"Retry using one of those instead."
                         ),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
         else:
             break
@@ -310,10 +310,10 @@ def apply_remediation_node(state: AgentState) -> Dict[str, Any]:
             for tc in response.tool_calls:
                 signature = (tc["name"], json.dumps(tc["args"], sort_keys=True, default=str))
                 if signature in executed_signatures:
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content="Skipped: this exact tool call was already executed in this turn.",
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
                     continue
                 tool_func = apply_tool_map.get(tc["name"])
@@ -324,20 +324,20 @@ def apply_remediation_node(state: AgentState) -> Dict[str, Any]:
                     if tc["name"] in remedy_tool_map:
                         tool_invocations.append((tc["name"], tc["args"], result))
                     executed_signatures.add(signature)
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=str(result),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
                 else:
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=(
                             f"Error: Tool '{tc['name']}' does not exist - it was never provided to you. "
                             f"Your real available tools are: {sorted(apply_tool_map.keys())}. "
                             f"Retry using one of those instead."
                         ),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
         elif not tool_invocations:
             curr_messages.append(HumanMessage(
@@ -462,20 +462,20 @@ def verify_remediation_node(state: AgentState) -> Dict[str, Any]:
                     logger.info(f"tool_call verification {tc['name']} args={tc['args']}")
                     result = invoke_tool_safely(tool_func, tc["args"])
                     record_tool_call(tc["name"], result)
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=str(result),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
                 else:
-                    curr_messages.append(HumanMessage(
+                    curr_messages.append(ToolMessage(
                         content=(
                             f"Error: Tool '{tc['name']}' does not exist - it was never provided to you. "
                             f"Your real available tools are: {sorted(diag_tool_map.keys())}. "
                             f"Retry using one of those instead."
                         ),
                         name=tc["name"],
-                        additional_kwargs={"tool_call_id": tc["id"]}
+                        tool_call_id=tc["id"]
                     ))
         else:
             break

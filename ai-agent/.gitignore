@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 
 venv/
+.venv/
 
 agent-interface/node_modules/
 agent-interface/.next/

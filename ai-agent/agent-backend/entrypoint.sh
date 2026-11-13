@@ -3,8 +3,10 @@ set -e
 
 python -c "
 import os, sys
-required = ['AWS_REGION', 'DIAGNOSTICS_MODEL_ID', 'REMEDIATION_MODEL_ID']
+required = ['DIAGNOSTICS_MODEL_ID', 'REMEDIATION_MODEL_ID']
 missing = [v for v in required if not os.getenv(v)]
+if not (os.getenv('MESH_API_KEY') or os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')):
+    missing.append('MESH_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY')
 if missing:
     sys.exit(f'Missing required env vars: {missing}')
 

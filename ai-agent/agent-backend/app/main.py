@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage
 
 from app.agent import compiled_graph, generate_proposal, MAX_ATTEMPTS, REQUIRE_APPROVAL
 from app.infra.conversation_store import ConversationStore
-from app.infra.bedrock import bedrock_client
+from app.infra.llm import check_llm_ready
 from app.infra.metrics import metrics_app
 from app.infra.usage_tracker import get_usage_dict
 
@@ -76,10 +76,10 @@ def readiness():
         logger.warning(f"readiness check failed: kubernetes api unreachable: {e}")
         raise HTTPException(status_code=503, detail=f"kubernetes api unreachable: {e}")
     try:
-        bedrock_client.meta.region_name
+        check_llm_ready()
     except Exception as e:
-        logger.warning(f"readiness check failed: bedrock client misconfigured: {e}")
-        raise HTTPException(status_code=503, detail=f"bedrock client misconfigured: {e}")
+        logger.warning(f"readiness check failed: LLM client misconfigured: {e}")
+        raise HTTPException(status_code=503, detail=f"LLM client misconfigured: {e}")
     return {"status": "ready"}
 
 @app.get("/api/usage")

@@ -6,9 +6,9 @@ Backend (LangGraph + FastAPI), frontend (Next.js chat UI), and Postgres for dura
 
 ## Prerequisites
 
-- `kubectl` pointed at your cluster, with cluster-admin rights
+- `kubectl` pointed at your cluster (e.g. `k3d`, `minikube`, or any Kubernetes cluster), with cluster-admin rights
 - A default StorageClass (Postgres requests a 5Gi PVC)
-- AWS credentials with `bedrock:InvokeModel`
+- An API Key for Mesh API, OpenRouter, or OpenAI
 - Docker and a registry, if you are building your own images
 
 ```sh
@@ -16,16 +16,8 @@ kubectl cluster-info
 kubectl get storageclass          # at least one marked (default)
 ```
 
-**AWS credentials.** On EKS run `../scripts/setup-pod-identity.sh create` — it creates the IAM role and maps
-it to the ServiceAccount, so no keys go in any file. `../scripts/setup-pod-identity.sh cleanup` removes both
-again. Edit `CLUSTER_NAME` at the top of the script first.
-
-Anywhere else, uncomment `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in the `secretGenerator`
-block of `kustomization.yaml`.
-
-On EKS leave them commented. Environment variables beat the Pod Identity endpoint in boto3's
-credential chain, so any value there overrides the role and every Bedrock call fails with
-`InvalidClientTokenId`.
+**LLM API Key.** Set `MESH_API_KEY` (or `OPENROUTER_API_KEY` / `OPENAI_API_KEY`) in the `secretGenerator` block
+of `kustomization.yaml` or as a Kubernetes secret in the `ai-agent` namespace.
 
 ---
 
@@ -86,7 +78,7 @@ cd ai-agent
 kubectl kustomize k8s/          # render, change nothing
 kubectl apply -k k8s/           # create/update everything
 kubectl diff -k k8s/            # what would change
-kubectl delete -k k8s/          # tear down (then ./scripts/setup-pod-identity.sh cleanup on EKS)
+kubectl delete -k k8s/          # tear down
 ```
 
 Check it came up:

@@ -1,8 +1,8 @@
 # K8s Diagnose & Remediate Agent  
 
 A LangGraph multi-agent that diagnoses and (with human approval) remediates Kubernetes problems
-using AWS Bedrock (Amazon Nova Pro for both diagnostics/verification and remediation - see
-`agent-backend/app/infra/bedrock.py`). Exposed via a FastAPI backend and a Next.js chat UI, with a
+using OpenAI-compatible models (such as Mesh API, OpenRouter, or OpenAI - see
+`agent-backend/app/infra/llm.py`). Exposed via a FastAPI backend and a Next.js chat UI, with a
 `diagnose -> propose fix -> [human approval] -> apply -> verify -> retry` loop
 (`agent-backend/app/agent/`).
 
@@ -19,7 +19,7 @@ ai-agent/
 
 ```sh
 cd agent-backend
-cp .env.example .env   # fill in AWS_REGION, model IDs, and any other values you want to set
+cp .env.example .env   # fill in MESH_API_KEY / OPENROUTER_API_KEY and model IDs
 pip install -r requirements.txt
 uvicorn app.main:app          # backend on http://127.0.0.1:8000
 
@@ -29,9 +29,8 @@ npm run dev              # frontend on http://localhost:3000
 ```
 
 Requires a working `kubectl` context (`~/.kube/config`) pointing at the cluster you want the agent
-to diagnose/remediate, and AWS credentials with `bedrock:InvokeModel` for the two model IDs in
-`agent-backend/.env` (resolved via boto3's default credential chain - env vars,
-`~/.aws/credentials`, or an IAM role).
+to diagnose/remediate (e.g. a local `k3d` cluster), and an API key for your chosen LLM provider
+in `agent-backend/.env`.
 
 ## Deploying to Kubernetes
 
@@ -47,7 +46,7 @@ All served by the FastAPI backend (`agent-backend/app/main.py`):
 |---|---|---|
 | GET | `/api/health` | Basic health check |
 | GET | `/healthz` | Liveness probe (also reports `require_approval`) |
-| GET | `/readyz` | Readiness probe - checks Kubernetes API and Bedrock client connectivity |
+| GET | `/readyz` | Readiness probe - checks Kubernetes API and LLM client connectivity |
 | GET | `/api/usage` | Token usage/cost tracking |
 | POST | `/api/query` | Submit a diagnosis request; starts a new agent session |
 | POST | `/api/decision` | Approve or reject a proposed fix |
@@ -63,7 +62,7 @@ All served by the FastAPI backend (`agent-backend/app/main.py`):
 | `agent-backend/app/agent/` | LangGraph state machine - the diagnose/propose/apply/verify/retry loop |
 | `agent-backend/app/tools/` | Kubernetes API tools the agent calls (read-only diagnostics + write remediation) |
 | `agent-backend/app/main.py` | FastAPI backend - `/api/query`, `/api/decision`, `/api/retry`, `/healthz`, `/readyz`, `/metrics` |
-| `agent-backend/app/infra/bedrock.py` | AWS Bedrock model client factory |
+| `agent-backend/app/infra/llm.py` | LLM model client factory (Mesh API, OpenRouter, OpenAI) |
 | `agent-backend/app/infra/checkpointer.py` | LangGraph checkpoint storage - Postgres (connection pool) if `DATABASE_URL` is set, in-memory otherwise |
 | `agent-backend/app/infra/usage_tracker.py` | Token usage/cost tracking |
 | `agent-backend/Dockerfile` | Backend container image |

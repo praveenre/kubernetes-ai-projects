@@ -7,7 +7,7 @@ GRAPH_NODE_SECONDS = Histogram(
     "agent_graph_node_seconds", "LangGraph node execution duration", ["node"]
 )
 LLM_TOKENS = Counter(
-    "agent_llm_tokens_total", "Bedrock tokens consumed", ["role", "direction"]
+    "agent_llm_tokens_total", "LLM tokens consumed", ["role", "direction"]
 )
 REMEDIATION_OUTCOMES = Counter(
     "agent_remediation_outcomes_total", "Remediation attempts by final outcome", ["outcome"]
